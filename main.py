@@ -5,8 +5,8 @@ board = [
     [0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
     ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+    [0, 0, 0, 0, 0, 0, 0, 0],
     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
 ]
 
@@ -28,10 +28,10 @@ for i in range(0,8):
         if board[i][j] == 0:
             continue
         if board[i][j].isupper() == game.white_to_move:
-            candidate_moves.append(move_generator.get_moves(game, board, i, j))
+            moves_for_piece = move_generator.get_moves(game, board, i, j)
+            candidate_moves.extend(moves_for_piece)
             
-
-print(candidate_moves)
+print([move.get_chess_notation() for move in candidate_moves])
 #game.make_move(0, 0, 4, 4, True)
 
 #print(board)

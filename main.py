@@ -1,3 +1,4 @@
+import move_generator
 board = [
     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -20,8 +21,19 @@ class GameState (object):
         white_to_move = not white_to_move
 
 game = GameState(board, True, [])
-game.make_move(0, 0, 4, 4, True)
 
-print(board)
+candidate_moves = []
+for i in range(0,8):
+    for j in range(0,8):
+        if board[i][j] == 0:
+            continue
+        if board[i][j].isupper() == game.white_to_move:
+            candidate_moves.append(move_generator.get_moves(game, board, i, j))
+            
+
+print(candidate_moves)
+#game.make_move(0, 0, 4, 4, True)
+
+#print(board)
 
 

@@ -1,4 +1,7 @@
 class Move:
+    C_TO_FILES = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
+    R_TO_RANKS = {0: '8', 1: '7', 2: '6', 3: '5', 4: '4', 5: '3', 6: '2', 7: '1'}
+    
     def __init__(self, start_square, end_square, board):
         self.start_row = start_square[0]
         self.start_col = start_square[1]
@@ -6,16 +9,27 @@ class Move:
         self.end_col = end_square[1]
         
         self.piece_moved = board[self.start_row][self.start_col]
-        self.piece_captured = board[self.end_row][self.end_col]
+        self.piece_captured = board[self.end_row][self.end_col] if board[self.end_row][self.end_col] != 0 else '#'
         
-    def get_chess_notation(self):
-
-        c_to_files = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
-        r_to_ranks = {0: '8', 1: '7', 2: '6', 3: '5', 4: '4', 5: '3', 6: '2', 7: '1'}
+        self.move_id = self.start_row * 10000 + self.start_col * 1000 + self.end_row * 100 + self.end_col * 10 + ord(self.piece_captured)
         
-        start_file = c_to_files[self.start_col]
-        start_rank = r_to_ranks[self.start_row]
-        end_file = c_to_files[self.end_col]
-        end_rank = r_to_ranks[self.end_row]
+    def get_computer_notation(self):   
+        start_file = Move.C_TO_FILES[self.start_col]
+        start_rank = Move.R_TO_RANKS[self.start_row]
+        end_file = Move.C_TO_FILES[self.end_col]
+        end_rank = Move.R_TO_RANKS[self.end_row]
         
         return f"{start_file}{start_rank}:{end_file}{end_rank}"
+    
+    def get_algebraic_notation(self):        
+        piece = "" if self.piece_moved.upper() == "P" else self.piece_moved.upper()
+
+        end_file = Move.C_TO_FILES[self.end_col]
+        end_rank = Move.R_TO_RANKS[self.end_row]
+        
+        return f"{piece}{end_file}{end_rank}"
+    
+    def __eq__(self, other):
+        if isinstance(other, Move):
+            return self.move_id == other.move_id
+        return False

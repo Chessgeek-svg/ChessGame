@@ -4,10 +4,10 @@ from Move import Move
 starting_board = [
             ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
             ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
             ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
             ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
         ]
@@ -17,8 +17,9 @@ class GameState (object):
         self.board = board            
         self.white_to_move = white_to_move
         self.move_log = move_log
-        self.en_passant = [2,1]
+        self.en_passant = []
         self.candidate_moves = []
+        self.check_analysis = False
     def make_move(self, start_row, start_col, end_row, end_col):
         temp = Move((start_row, start_col), (end_row, end_col), self.board)
         if temp in self.candidate_moves:
@@ -28,6 +29,7 @@ class GameState (object):
             if self.board[end_row][end_col].upper() == 'P' and [end_row, end_col] == self.en_passant:
                 self.board[start_row][end_col] = 0
             self.en_passant = move_generator.check_en_passant(self.board, start_row, end_row, end_col)
+            self.candidate_moves = []
             game.white_to_move = not game.white_to_move
             print(game.board)
         else:

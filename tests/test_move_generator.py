@@ -119,3 +119,136 @@ class TestMoveGeneration:
         assert self.board[2][1] == 'P'
         assert self.board[3][1] == 0
         assert self.game.en_passant == False
+        
+    def test_check(self):
+        #Test with pawn
+        self.setup_method()
+        self.board[1][3] = 'P'
+        self.game.white_to_move = False
+        candidate_moves = []
+        legal_moves = []
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] == 0:
+                    continue
+                if self.board[i][j].isupper() == self.game.white_to_move:
+                    candidate_moves.extend(move_generator.get_moves(self.game, self.board, i, j))
+        for move in candidate_moves:
+            if not move_generator.puts_in_check(self.game, self.board, move):
+                legal_moves.append(move)
+
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in legal_moves)
+        assert len(legal_moves) == 4
+        assert move_list == ['b8:d7', 'c8:d7', 'd8:d7', 'e8:d7']
+        
+        #Test with bishop
+        self.setup_method()
+        self.board[1][3] = 0
+        self.board[4][0] = 'B'
+        self.game.white_to_move = False
+        candidate_moves = []
+        legal_moves = []
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] == 0:
+                    continue
+                if self.board[i][j].isupper() == self.game.white_to_move:
+                    candidate_moves.extend(move_generator.get_moves(self.game, self.board, i, j))
+        for move in candidate_moves:
+            if not move_generator.puts_in_check(self.game, self.board, move):
+                legal_moves.append(move)
+
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in legal_moves)
+        assert len(legal_moves) == 6
+        assert move_list == ['b8:d7', 'b8:c6', 'c8:d7', 'd8:d7', 'b7:b5', 'c7:c6']
+        
+        #Test with knight
+        self.setup_method()
+        self.board[1][3] = 'P'
+        self.game.white_to_move = False
+        candidate_moves = []
+        legal_moves = []
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] == 0:
+                    continue
+                if self.board[i][j].isupper() == self.game.white_to_move:
+                    candidate_moves.extend(move_generator.get_moves(self.game, self.board, i, j))
+        for move in candidate_moves:
+            if not move_generator.puts_in_check(self.game, self.board, move):
+                legal_moves.append(move)
+
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in legal_moves)
+        assert len(legal_moves) == 4
+        assert move_list == ['b8:d7', 'c8:d7', 'd8:d7', 'e8:d7']
+        
+        #Test with rook
+        self.setup_method()
+        self.board[1][4] = 'R'
+        self.game.white_to_move = False
+        candidate_moves = []
+        legal_moves = []
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] == 0:
+                    continue
+                if self.board[i][j].isupper() == self.game.white_to_move:
+                    candidate_moves.extend(move_generator.get_moves(self.game, self.board, i, j))
+        for move in candidate_moves:
+            if not move_generator.puts_in_check(self.game, self.board, move):
+                legal_moves.append(move)
+
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in legal_moves)
+        assert len(legal_moves) == 4
+        assert move_list == ['d8:e7', 'e8:e7', 'f8:e7', 'g8:e7']
+        
+        #en passant should be illegal if it puts the player in check
+        self.setup_method()
+        self.board[1][0] = 0
+        self.board[3][0] = 'P'
+        self.board[3][1] = 'p'
+        self.board[4][0] = 'K'
+        self.board[7][4] = 0
+        self.board[6][4] = 0
+        self.game.en_passant = [2,1]
+        candidate_moves = []
+        legal_moves = []
+                
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] == 0:
+                    continue
+                if self.board[i][j].isupper() == self.game.white_to_move:
+                    candidate_moves.extend(move_generator.get_moves(self.game, self.board, i, j))
+        for move in candidate_moves:
+            if not move_generator.puts_in_check(self.game, self.board, move):
+                legal_moves.append(move)
+        
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in legal_moves)
+        assert len(legal_moves) == 5
+        assert move_list == ['a4:a3', 'a4:b4', 'a4:b5', 'a4:b3', 'f1:b5']
+        #en passant is not possible because it would result in check
+        
+        #if the check from the rook were blocked, en passant would be possible:
+        candidate_moves = []
+        legal_moves = []
+        self.board[1][0] = 'p'
+        for i in range(8):
+            for j in range(8):
+                if self.board[i][j] == 0:
+                    continue
+                if self.board[i][j].isupper() == self.game.white_to_move:
+                    candidate_moves.extend(move_generator.get_moves(self.game, self.board, i, j))
+        for move in candidate_moves:
+            if not move_generator.puts_in_check(self.game, self.board, move):
+                legal_moves.append(move)
+        
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in legal_moves)
+        assert len(legal_moves) == 6
+        assert move_list == ['a5:b6', 'a4:a3', 'a4:b4', 'a4:b5', 'a4:b3', 'f1:b5']

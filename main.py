@@ -20,10 +20,10 @@ class GameState (object):
         self.en_passant = []
         self.candidate_moves = []
         self.check_analysis = False
-    def make_move(self, start_row, start_col, end_row, end_col):
-        temp = Move((start_row, start_col), (end_row, end_col), self.board)
+    def make_move(self, start_row, start_col, end_row, end_col, promote_to = None):
+        temp = Move((start_row, start_col), (end_row, end_col), self.board, promote_to)
         if temp in self.candidate_moves:
-            self.board[end_row][end_col] = self.board[start_row][start_col]
+            self.board[end_row][end_col] = promote_to if promote_to else self.board[start_row][start_col]
             self.board[start_row][start_col] = 0
             #Check if move is en passant, remove captured piece if so
             if self.board[end_row][end_col].upper() == 'P' and [end_row, end_col] == self.en_passant:
@@ -47,5 +47,5 @@ for i in range(0,8):
             
 print([move.get_computer_notation() for move in game.candidate_moves])
 #Example of illegal & legal move behavior respectively
-game.make_move(3, 0, 2, 1)
+game.make_move(1, 1, 0, 2, "Q")
 game.make_move(6, 4, 4, 4)

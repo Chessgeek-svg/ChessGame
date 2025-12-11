@@ -99,14 +99,22 @@ def get_pawn_moves(gamestate, board, start_row, start_col):
      
     
     direction = -1 if piece_color else 1
+
+    if start_row + direction < 0 or start_row + direction > 7:
+        return []
     
     #Normal pawn move
     if board[start_row + direction][start_col] == 0:
-        new_move = Move((start_row, start_col), (start_row + direction, start_col), board)
-        if gamestate.check_analysis:
-            valid_moves.append(new_move)
-        elif not puts_in_check(gamestate, board, new_move):
-            valid_moves.append(new_move)
+        promotion_piece_list = promotion_piece_options(start_row, direction, piece_color)
+        for piece in promotion_piece_list:
+            if piece == "Not Promotion":
+                new_move = Move((start_row, start_col), (start_row + direction, start_col), board)
+            else:
+                new_move = Move((start_row, start_col), (start_row + direction, start_col), board, piece)
+            if gamestate.check_analysis:
+                valid_moves.append(new_move)
+            elif not puts_in_check(gamestate, board, new_move):
+                valid_moves.append(new_move)
 
         #Check if piece is on starting square. Tiny optimization to only check if square in front of pawn is empty
         starting_square = True if (piece_color and start_row == 6) or (not piece_color and start_row == 1) else False
@@ -130,16 +138,26 @@ def get_pawn_moves(gamestate, board, start_row, start_col):
             target_square_state = target_square_status(gamestate, board, piece_color, target_square, valid_moves)
             
             if target_square_state == 1 or gamestate.en_passant == ([new_r, new_c]):
-                new_move = Move((start_row, start_col), (new_r, new_c), board)
-                if gamestate.check_analysis:
-                    valid_moves.append(new_move)
-                elif not puts_in_check(gamestate, board, new_move):
-                    valid_moves.append(new_move)
-                if (start_row + direction == 0 and piece_color) or (start_row + direction == 7 and not piece_color):
-                    #TODO Promotion Check but not here since this is just a list of valid moves
-                    pass
-    
+                promotion_piece_list = promotion_piece_options(start_row, direction, piece_color)
+                for piece in promotion_piece_list:
+                    if piece == "Not Promotion":
+                        new_move = Move((start_row, start_col), (new_r, new_c), board)
+                    else:
+                        new_move = Move((start_row, start_col), (new_r, new_c), board, piece)
+                    if gamestate.check_analysis:
+                        valid_moves.append(new_move)
+                    elif not puts_in_check(gamestate, board, new_move):
+                        valid_moves.append(new_move)
+        
     return(valid_moves)
+
+def promotion_piece_options(start_row, direction, piece_color):
+    if (start_row + direction == 0 and piece_color):
+        return ["Q", "R", "B", "N"]
+    elif (start_row + direction == 7 and not piece_color):
+        return ["q", "r", "b", "n"]
+    else:
+        return ["Not Promotion"]
 
 def check_en_passant(board, start_row, end_row, end_col):
     if board[end_row][end_col].upper() == "P" and abs(end_row - start_row) == 2:

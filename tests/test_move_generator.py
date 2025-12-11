@@ -252,3 +252,42 @@ class TestMoveGeneration:
         move_list.extend(move.get_computer_notation() for move in legal_moves)
         assert len(legal_moves) == 6
         assert move_list == ['a5:b6', 'a4:a3', 'a4:b4', 'a4:b5', 'a4:b3', 'f1:b5']
+
+    def test_promotion(self):
+        #Promotion is possible when reaching the final rank, by capture or otherwise
+        self.setup_method()
+        self.board[1][2] = 'P'
+        self.board[0][2] = 0
+        moves_for_piece = move_generator.get_pawn_moves(self.game, self.board, 1, 2)
+        assert len(moves_for_piece) == 12
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['c7:c8=Q', 'c7:c8=R', 'c7:c8=B', 'c7:c8=N', 
+                             'c7:b8=Q', 'c7:b8=R', 'c7:b8=B', 'c7:b8=N', 
+                             'c7:d8=Q', 'c7:d8=R', 'c7:d8=B', 'c7:d8=N']
+
+        #Promotion is not possible for non-pawn pieces
+        self.setup_method()
+        self.board[1][0] = 'B'
+        self.board[2][1] = 'P'
+        moves_for_piece = move_generator.get_bishop_moves(self.game, self.board, 1, 0)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['a7:b8']
+        assert len(moves_for_piece) == 1
+
+        #Promotion can only occur at the end of the board
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 2, 1)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['b6:c7']
+        assert len(moves_for_piece) == 1
+
+        #Both colors can promote
+        self.setup_method()
+        self.board[6][0] = 'p'
+        moves_for_piece = move_generator.get_pawn_moves(self.game, self.board, 6, 0)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['a2:b1=q', 'a2:b1=r', 'a2:b1=b', 'a2:b1=n']
+        assert len(moves_for_piece) == 4

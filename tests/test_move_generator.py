@@ -291,3 +291,62 @@ class TestMoveGeneration:
         move_list.extend(move.get_computer_notation() for move in moves_for_piece)
         assert move_list == ['a2:b1=q', 'a2:b1=r', 'a2:b1=b', 'a2:b1=n']
         assert len(moves_for_piece) == 4
+
+    def test_castling(self):
+        #Castling is possible both kingside and queenside
+        self.setup_method()
+        self.board[7][1], self.board[7][2], self.board[7][3], self.board[7][5], self.board[7][6] = 0, 0, 0, 0, 0
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 7, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['e1:c1', 'e1:g1', 'e1:d1', 'e1:f1']
+
+        #Castling is not possible if there are pieces in the way
+        self.game.white_to_move = False
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 0, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == []
+
+        #Castling is not possible if the king is in check
+        self.setup_method()
+        self.board[7][1], self.board[7][2], self.board[7][3], self.board[7][5], self.board[7][6] = 0, 0, 0, 0, 0
+        self.board[6][3], self.board[3][0] = 0, 'b'
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 7, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['e1:d1', 'e1:f1']
+
+        #Castling is not possible if the king would be moving through check
+        self.setup_method()
+        self.board[7][1], self.board[7][2], self.board[7][3], self.board[7][5], self.board[7][6] = 0, 0, 0, 0, 0
+        self.board[6][4] = 'p'
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 7, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['e1:e2']
+
+        #Castling is not possible if the king would end its turn in check
+        self.setup_method()
+        self.board[7][1], self.board[7][2], self.board[7][3], self.board[7][5], self.board[7][6] = 0, 0, 0, 0, 0
+        self.board[6][1], self.board[6][7] = 'p', 'p'
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 7, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['e1:d1', 'e1:f1']
+
+        #Castling is not possible if the king has moved before
+        self.setup_method()
+        self.board[7][1], self.board[7][2], self.board[7][3], self.board[7][5], self.board[7][6] = 0, 0, 0, 0, 0
+        self.game.move_log = ['d1:e1']
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 7, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['e1:d1', 'e1:f1']
+
+        #Castling is not possible with a rook that has moved before
+        self.game.move_log = ["a2:a1"]
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 7, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['e1:g1', 'e1:d1', 'e1:f1']

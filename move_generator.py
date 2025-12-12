@@ -71,8 +71,20 @@ def get_knight_moves(gamestate, board, start_row, start_col):
 
 def get_king_moves(gamestate, board, start_row, start_col):
     valid_moves = []
+    castling = []
     
     piece_color = board[start_row][start_col].isupper()
+
+    if piece_color and start_row == 7 and start_col == 4 and not gamestate.check_analysis:
+        castling = castle(gamestate, board, piece_color)
+    elif not piece_color and start_row == 0 and start_col == 4 and not gamestate.check_analysis:
+        castling = castle(gamestate, board, piece_color)
+    if castling:
+        for new_move in castling:
+            if gamestate.check_analysis:
+                valid_moves.append(new_move)
+            elif not puts_in_check(gamestate, board, new_move):
+                valid_moves.append(new_move)
         
     directions = [(-1,0), (1,0), (0,-1), (0,1), (-1,-1), (-1,1), (1,-1), (1,1)]
     
@@ -90,6 +102,96 @@ def get_king_moves(gamestate, board, start_row, start_col):
                 elif not puts_in_check(gamestate, board, new_move):
                     valid_moves.append(new_move)
     return(valid_moves)
+
+def castle(gamestate, board, piece_color):
+    if piece_color and board[7][4] == "K":
+        kings = "e1"
+    elif not piece_color and board[0][4] == 'k':
+        kings = "e8"
+
+    #If the king isn't on its starting square, or if it has moved back to its starting square, 
+    #castling is not possible. Would need to be changed to support 960 if desired
+    if not kings:
+        return None
+    else:
+        for move in gamestate.move_log:
+            if move[-2:] == kings:
+                return None
+    #The same logic for rooks, if a rook isn't on it's starting square or has moved it cannot be used to castle
+    #This block also ensures there are no pieces between the rook and king
+    rooks = []
+    if piece_color:
+        if board[7][0] == "R" and board[7][1] == 0 and board[7][2] == 0 and board[7][3] == 0:
+            rooks.append("a1")
+        if board[7][7] == "R" and board[7][6] == 0 and board[7][5] == 0:
+            rooks.append("h1")
+    else:
+        if board[0][0] == "r" and board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
+            rooks.append("a8")
+        if board[0][7] == "r" and board[0][6] == 0 and board[0][5] == 0:
+            rooks.append("h8")
+
+    for rook in rooks[::-1]:
+        for move in gamestate.move_log:
+            if move[-2:] == rook:
+                rooks.remove(rook)
+
+    #For each rook that might be castled with, make sure the king doesn't go into, out of, or through check
+    into_out_of_through_check = []
+    legal_castle_moves = []
+    if "a1" in rooks:
+        legal_castle_moves.append(Move((7, 4), (7, 2), board))
+
+        into_out_of_through_check.append(Move((7, 4), (7, 4), board))
+        into_out_of_through_check.append(Move((7, 4), (7, 3), board))
+        into_out_of_through_check.append(Move((7, 4), (7, 2), board))
+
+        for move in into_out_of_through_check:
+           if puts_in_check(gamestate, board, move):
+                legal_castle_moves.remove(Move((7, 4), (7, 2), board))
+                break
+        into_out_of_through_check = []
+        
+
+    if "h1" in rooks:
+        legal_castle_moves.append(Move((7, 4), (7, 6), board))
+
+        into_out_of_through_check.append(Move((7, 4), (7, 4), board))
+        into_out_of_through_check.append(Move((7, 4), (7, 5), board))
+        into_out_of_through_check.append(Move((7, 4), (7, 6), board))
+
+        for move in into_out_of_through_check:
+           if puts_in_check(gamestate, board, move):
+                legal_castle_moves.remove(Move((7, 4), (7, 6), board))
+                break
+        into_out_of_through_check = []
+
+    if "a8" in rooks:
+        legal_castle_moves.append(Move((0, 4), (0, 2), board))
+
+        into_out_of_through_check.append(Move((0, 4), (0, 4), board))
+        into_out_of_through_check.append(Move((0, 4), (0, 3), board))
+        into_out_of_through_check.append(Move((0, 4), (0, 2), board))
+
+        for move in into_out_of_through_check:
+           if puts_in_check(gamestate, board, move):
+                legal_castle_moves.remove(Move((0, 4), (0, 2), board))
+                break
+        into_out_of_through_check = []
+
+    if "h8" in rooks:
+        legal_castle_moves.append(Move((0, 4), (0, 6), board))
+
+        into_out_of_through_check.append(Move((0, 4), (0, 4), board))
+        into_out_of_through_check.append(Move((0, 4), (0, 5), board))
+        into_out_of_through_check.append(Move((0, 4), (0, 6), board))
+        for move in into_out_of_through_check:
+           if puts_in_check(gamestate, board, move):
+                legal_castle_moves.remove(Move((0, 4), (0, 6), board))
+                break
+        into_out_of_through_check = []
+
+    return legal_castle_moves
 
 def get_pawn_moves(gamestate, board, start_row, start_col):   
     valid_moves = []
@@ -216,7 +318,11 @@ def puts_in_check(gamestate, board, Move, move_log = []):
     temp_gamestate = copy.deepcopy(gamestate)
     temp_gamestate.check_analysis = True
     temp_board[Move.end_row][Move.end_col] = temp_board[Move.start_row][Move.start_col]
-    temp_board[Move.start_row][Move.start_col] = 0
+    #The below check shouldn't need to be made, since a piece can't move without moving. Its a bandaid fix for right now
+    #I needed a way to see if a king is currently in check when determining if it can castle, and I don't currently have that, 
+    #I only have a way to see if a move will leave the king in check. Thus I needed a "move" that doesn't change the position
+    if (Move.start_row, Move.start_col) != (Move.end_row, Move.end_col):
+        temp_board[Move.start_row][Move.start_col] = 0
     if temp_board[Move.end_row][Move.end_col].upper() == 'P' and [Move.end_row, Move.end_col] == gamestate.en_passant:
             temp_board[Move.start_row][Move.end_col] = 0
     temp_gamestate.white_to_move = not gamestate.white_to_move

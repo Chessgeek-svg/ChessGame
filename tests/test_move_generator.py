@@ -15,6 +15,18 @@ class TestMoveGeneration:
         ]
         self.game = GameState(self.board, white_to_move = True, move_log = [])
 
+    def empty_board(self):
+        self.board = [
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
+            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0]
+        ]
+        self.game = GameState(self.board, white_to_move = True, move_log = [])
 
     def test_rook_moves(self):
         self.setup_method()
@@ -350,3 +362,35 @@ class TestMoveGeneration:
         move_list = []
         move_list.extend(move.get_computer_notation() for move in moves_for_piece)
         assert move_list == ['e1:g1', 'e1:d1', 'e1:f1']
+
+    def test_checkmate_stalemate(self):
+        self.empty_board()
+        self.board[0][0], self.board[0][1], self.board[1][2] = 'K', 'q', 'k'
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 0, 0)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert len(move_list) == 0
+        assert self.game.checkmate_stalemate() == "Checkmate"
+
+        self.empty_board()
+        self.board[0][0], self.board[1][1], self.board[2][1] = 'K', 'r', 'q'
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 0, 0)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == []
+        assert GameState.checkmate_stalemate(self.game) == "Stalemate"
+
+        self.empty_board()
+        self.board[0][0], self.board[1][1]= 'K', 'q'
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 0, 0)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert move_list == ['a8:b7']
+        assert GameState.checkmate_stalemate(self.game) == "Check"
+
+        self.setup_method()
+        moves_for_piece = move_generator.get_moves(self.game, self.board, 6, 4)
+        move_list = []
+        move_list.extend(move.get_computer_notation() for move in moves_for_piece)
+        assert len(move_list) > 0
+        assert self.game.checkmate_stalemate() == "Normal"        

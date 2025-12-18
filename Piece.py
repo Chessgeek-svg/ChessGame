@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from Move import Move
 
 class Piece(ABC):
     def __init__(self, color, square, previous_square):
@@ -10,11 +11,11 @@ class Piece(ABC):
         return f"{self.color} {self.__class__.__name__} at {self.square}"
     
     @abstractmethod
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         pass
 
 class SlidingPiece(Piece):
-    def _get_sliding_moves(self, board, directions):
+    def _get_sliding_moves(self, gamestate, directions):
         valid_moves = []
 
         for dr, dc in directions:
@@ -22,11 +23,11 @@ class SlidingPiece(Piece):
             new_c = self.square[1] + dc
 
             while 0 <= new_r <= 7 and 0 <= new_c <= 7:
-                target_square = board[new_r][new_c]
+                target_square = gamestate.board[new_r][new_c]
                 if target_square is None:
-                    valid_moves.append((new_r, new_c))
+                    valid_moves.append(Move(self.square, (new_r, new_c), gamestate.board))
                 elif target_square.color != self.color:
-                    valid_moves.append((new_r, new_c))
+                    valid_moves.append(Move(self.square, (new_r, new_c), gamestate.board))
                     break
                 else:
                     break
@@ -37,7 +38,7 @@ class SlidingPiece(Piece):
         return valid_moves
     
 class SteppingPiece(Piece):
-    def _get_stepping_moves(self, board, directions):
+    def _get_stepping_moves(self, gamestate, directions):
         valid_moves = []
         
         for dr, dc in directions:
@@ -45,39 +46,47 @@ class SteppingPiece(Piece):
             new_c = self.square[1] + dc
 
             if 0 <= new_r <= 7 and 0 <= new_c <= 7:
-                target_square = board[new_r][new_c]
+                target_square = gamestate.board[new_r][new_c]
                 if target_square is None or target_square.color != self.color:
-                    valid_moves.append((new_r, new_c))
+                    valid_moves.append(Move(self.square, (new_r, new_c), gamestate.board))
 
         return(valid_moves)
     
 class Bishop(SlidingPiece):
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         directions = [(-1,-1), (1,-1), (1,1), (-1,1)]
-        return self.get_sliding_moves(board, directions)
+        return self._get_sliding_moves(gamestate, directions)
 
 class Rook(SlidingPiece):
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         directions = [(-1,0), (0,-1), (1,0), (0,1)]
-        return self.get_sliding_moves(board, directions)
+        return self._get_sliding_moves(gamestate, directions)
 
 class Queen(SlidingPiece):
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         directions = [(-1,0), (-1,-1), (0,-1), (1,-1), (1,0), (1,1), (0,1), (-1,1)]
-        return self.get_sliding_moves(board, directions)
+        return self._get_sliding_moves(gamestate, directions)
     
 class Knight(SteppingPiece):
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         directions = [(-2,-1), (-1,-2), (1,-2), (2,-1), (2,1), (1,2), (-1,2), (-2,1)]
-        return self._get_stepping_moves(board, directions)
+        return self._get_stepping_moves(gamestate, directions)
     
 class King(SteppingPiece):
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         directions = [(-1,0), (-1,-1), (0,-1), (1,-1), (1,0), (1,1), (0,1), (-1,1)]
-        return self._get_stepping_moves(board, directions)
+        valid_moves = self._get_stepping_moves(gamestate, directions)
+        r, c = self.square
+
+        if gamestate.castling_rights[self.color]['kingside'] and gamestate.board[r][c+1] is None and gamestate.board[r][c+2] is None:
+            valid_moves.append(Move(self.square, (r, c+2), gamestate.board, is_castle=True))
+        if gamestate.castling_rights[self.color]['queenside'] and gamestate.board[r][c-1] is None and gamestate.board[r][c-2] is None and gamestate.board[r][c-3] is None:
+            valid_moves.append(Move(self.square, (r, c-2), gamestate.board, is_castle=True))
+
+        return valid_moves
 
 class Pawn(Piece):
-    def get_legal_moves(self, board):
+    def get_legal_moves(self, gamestate):
         valid_moves = []
 
         direction = -1 if self.color == "White" else 1
@@ -87,19 +96,32 @@ class Pawn(Piece):
 
         assert 0 <= target_r <= 7, f"Logic Error: Pawn found on illegal rank {r}!"
 
-        if board[target_r][c] is None:
-            valid_moves.append((target_r, c))
+        if gamestate.board[target_r][c] is None:
+            self._add_move_or_promotion_options(target_r, c, gamestate.board, valid_moves)
+
 
             if not self.previous_square:
                 double_r = r + 2 * direction
-                if board[double_r][c] is None:
-                    valid_moves.append((double_r, c))
+                if gamestate.board[double_r][c] is None:
+                    self._add_move_or_promotion_options(double_r, c, gamestate.board, valid_moves)
+
 
         for dc in [-1, 1]:
             target_c = c + dc
             if 0 <= target_c <= 7:
-                target_piece = board[target_r][target_c]
-                if target_piece and target_piece.color != self.color:
-                    valid_moves.append((target_r, target_c))
+                target_piece = gamestate.board[target_r][target_c]
+                if (target_piece and target_piece.color != self.color):
+                    self._add_move_or_promotion_options(target_r, target_c, gamestate.board, valid_moves)
+                elif (target_r, target_c) == gamestate.en_passant:
+                    valid_moves.append(Move(self.square, (target_r, target_c), gamestate.board, is_en_passant=True))
 
         return valid_moves
+    
+    def _add_move_or_promotion_options(self, end_row, end_col, board, valid_moves):
+        promotion_rank = 0 if self.color == "White" else 7
+
+        if end_row == promotion_rank:
+            for piece_type in ["Q", "R", "B", "N"]:
+                valid_moves.append(Move(self.square, (end_row, end_col), board, promote_to=piece_type))
+        else:
+            valid_moves.append(Move(self.square, (end_row, end_col), board))

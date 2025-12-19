@@ -8,6 +8,7 @@ class Move:
         self.is_en_passant = is_en_passant
         self.is_castle = is_castle
         self.promote_to = promote_to
+        self.promoted_piece_ref = None
         
         self.piece_moved = board[self.start_row][self.start_col]
         self.piece_captured = board[self.end_row][self.end_col]
@@ -15,7 +16,7 @@ class Move:
         if self.is_en_passant:
             self.piece_captured = board[self.start_row][self.end_col]
         
-        self.move_id = self.start_row * 10000 + self.start_col * 1000 + self.end_row * 100 + self.end_col * 10 + ord(self.piece_captured)
+        self.move_id = self.start_row * 10000 + self.start_col * 1000 + self.end_row * 100 + self.end_col * 10
         
     def get_computer_notation(self):   
         start_file = Move.C_TO_FILES[self.start_col]

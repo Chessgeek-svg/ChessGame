@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from Move import Move
 
 class Piece(ABC):
-    def __init__(self, color, square, previous_square):
+    def __init__(self, color, square, previous_square=None):
         self.color = color
         self.square = square
         self.previous_square = previous_square
@@ -112,7 +112,7 @@ class Pawn(Piece):
                 target_piece = gamestate.board[target_r][target_c]
                 if (target_piece and target_piece.color != self.color):
                     self._add_move_or_promotion_options(target_r, target_c, gamestate.board, valid_moves)
-                elif (target_r, target_c) == gamestate.en_passant:
+                elif (target_r, target_c) == gamestate.en_passant_target:
                     valid_moves.append(Move(self.square, (target_r, target_c), gamestate.board, is_en_passant=True))
 
         return valid_moves

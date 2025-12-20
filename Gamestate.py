@@ -63,6 +63,21 @@ class Gamestate (object):
         else:
             self.black_pieces.append(piece)
 
+    def remove_piece_manually(self, square):
+        row, col = square
+        piece = self.board[row][col]
+
+        if piece is None:
+            return
+        
+        piece.square = None
+        self.board[row][col] = None
+
+        if piece.color == "White":
+            self.white_pieces.remove(piece)
+        else:
+            self.black_pieces.remove(piece)
+
     def get_piece_by_type(self, piece_type, color):
         target_list = self.white_pieces if color == "White" else self.black_pieces
         for piece in target_list:
@@ -182,8 +197,8 @@ class Gamestate (object):
             #Do not allow castling through or out of check. 
             #Computationally could be improved (generating every opp move 3 times for each castle option)
             if move.is_castle:
-                if (self.square_under_attack(move.start_row, move.start_col) or 
-                self.square_under_attack(move.start_row, (move.start_col + move.end_col) // 2)):
+                if (self.square_under_attack((move.start_row, move.start_col)) or 
+                self.square_under_attack((move.start_row, (move.start_col + move.end_col) // 2))):
                     continue
 
             self.make_move(move)

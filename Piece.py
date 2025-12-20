@@ -99,7 +99,8 @@ class Pawn(Piece):
         if gamestate.board[target_r][c] is None:
             self._add_move_or_promotion_options(target_r, c, gamestate.board, valid_moves)
 
-
+            #TODO: This is the only class that actually uses previous_square, so at some point this should become a
+            #has_moved check that gets updated, since I ended up tracking the previous squares through move objects
             if not self.previous_square:
                 double_r = r + 2 * direction
                 if gamestate.board[double_r][c] is None:

@@ -106,9 +106,13 @@ class TestGameState:
             'Black': {'kingside': True, 'queenside': True}
         }
         
-        black_rook = Rook("Black", (0, 5)) # Rook at f8
+        #Can't castle through check
+        black_rook = Rook("Black", (0, 5)) # Rook on f8
         game.place_piece_manually(black_rook, (0, 5))
-        
+
+        assert len(game.white_pieces) == 2, "Manually placed pieces not added to piece list"
+        assert len(game.black_pieces) == 1, "Manually placed piece not added to piece list"
+
         assert game.square_under_attack((7, 5)) is True, "Square not under attack when it should be"
         assert game.square_under_attack((7, 4)) is False, "Square under attack when it shouldn't be"
         
@@ -119,4 +123,45 @@ class TestGameState:
             if move.start_row == 7 and move.start_col == 4 and move.end_row == 7 and move.end_col == 6:
                 castle_found = True
                 
-        assert not castle_found, "Engine allowed castling through check!"
+        assert not castle_found, "Engine allowed castling through check"
+
+        game.remove_piece_manually((0, 5))
+        assert len(game.black_pieces) == 0, "Manually removed piece not removed from piece list"
+
+        #Can't castle out of check
+        black_rook = Rook("Black", (0, 4)) # Rook on e8
+        game.place_piece_manually(black_rook, (0, 4))
+
+        legal_moves = game.get_all_legal_moves()
+        
+        castle_found = False
+        for move in legal_moves:
+            if move.start_row == 7 and move.start_col == 4 and move.end_row == 7 and move.end_col == 6:
+                castle_found = True
+                
+        assert not castle_found, "Engine allowed castling out of check"
+
+        game.remove_piece_manually((0, 4))
+
+        #Castling is possible when not in check
+        legal_moves = game.get_all_legal_moves()
+
+        castle_found = False
+        for move in legal_moves:
+            if move.start_row == 7 and move.start_col == 4 and move.end_row == 7 and move.end_col == 6:
+                castle_found = True
+
+        assert castle_found, "Engine failed to allow legal castle through check"
+
+        game.make_move(Move((7,7), (6,7), game.board))
+        game.make_move(Move((6,7), (7,7), game.board))
+
+        legal_moves = game.get_all_legal_moves()
+
+        castle_found = False
+        for move in legal_moves:
+            if move.start_row == 7 and move.start_col == 4 and move.end_row == 7 and move.end_col == 6:
+                castle_found = True
+
+        assert not castle_found, "Engine allowed castle after rook had moved"
+

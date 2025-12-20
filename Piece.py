@@ -2,10 +2,9 @@ from abc import ABC, abstractmethod
 from Move import Move
 
 class Piece(ABC):
-    def __init__(self, color, square, previous_square=None):
+    def __init__(self, color, square):
         self.color = color
         self.square = square
-        self.previous_square = previous_square
 
     def __repr__(self):
         return f"{self.color} {self.__class__.__name__} at {self.square}"
@@ -99,9 +98,7 @@ class Pawn(Piece):
         if gamestate.board[target_r][c] is None:
             self._add_move_or_promotion_options(target_r, c, gamestate.board, valid_moves)
 
-            #TODO: This is the only class that actually uses previous_square, so at some point this should become a
-            #has_moved check that gets updated, since I ended up tracking the previous squares through move objects
-            if not self.previous_square:
+            if (r == 1 and self.color == "Black") or (r == 6 and self.color == "White"):
                 double_r = r + 2 * direction
                 if gamestate.board[double_r][c] is None:
                     self._add_move_or_promotion_options(double_r, c, gamestate.board, valid_moves)

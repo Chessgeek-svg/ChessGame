@@ -37,14 +37,14 @@ class Gamestate (object):
             PieceClass = piece_order[col]
             
             # Place Black Pieces (Row 0)
-            board[0][col] = PieceClass("Black", (0, col), None)
+            board[0][col] = PieceClass("Black", (0, col))
             
             # Place White Pieces (Row 7)
-            board[7][col] = PieceClass("White", (7, col), None)
+            board[7][col] = PieceClass("White", (7, col))
             
             # Place Pawns (Row 1 and 6)
-            board[1][col] = Pawn("Black", (1, col), None)
-            board[6][col] = Pawn("White", (6, col), None)
+            board[1][col] = Pawn("Black", (1, col))
+            board[6][col] = Pawn("White", (6, col))
 
             self.black_pieces.append(board[0][col])
             self.black_pieces.append(board[1][col])
@@ -60,8 +60,12 @@ class Gamestate (object):
 
         if piece.color == "White":
             self.white_pieces.append(piece)
+            if isinstance(piece, King):
+                self.white_king = piece
         else:
             self.black_pieces.append(piece)
+            if isinstance(piece, King):
+                self.black_king = piece            
 
     def remove_piece_manually(self, square):
         row, col = square
@@ -103,7 +107,7 @@ class Gamestate (object):
             move.piece_moved.square = None
             piece_map = {"Q": Queen, "R": Rook, "B": Bishop, "N": Knight}
             NewClass = piece_map[move.promote_to]
-            new_piece = NewClass(move.piece_moved.color, (move.end_row, move.end_col), None)
+            new_piece = NewClass(move.piece_moved.color, (move.end_row, move.end_col))
             self.board[move.end_row][move.end_col] = new_piece
             active_list = self.white_pieces if move.piece_moved.color == "White" else self.black_pieces
             active_list.append(self.board[move.end_row][move.end_col])

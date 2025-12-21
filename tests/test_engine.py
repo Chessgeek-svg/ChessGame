@@ -7,16 +7,17 @@ class TestGameState:
         self.game = Gamestate(setup_type="standard")
 
     def test_piece_list_sync(self):
-        game = Gamestate(setup_type="empty")
+        empty_game = Gamestate(setup_type="empty")
         
         rook = Rook("White", (3, 3))
-        game.place_piece_manually(rook, (3, 3))
+        empty_game.place_piece_manually(rook, (3, 3))
         
-        assert game.board[3][3] == rook
-        assert rook in game.white_pieces, "Piece not added to internal list"
-        assert len(game.white_pieces) == 1
+        assert empty_game.board[3][3] == rook
+        assert rook in empty_game.white_pieces, "Piece not added to internal list"
+        assert len(empty_game.white_pieces) == 1
 
     def test_castling_rights_logic(self):
+        self.setup_method()
         game = self.game
         assert game.castling_rights['White']['kingside'] is True
 
@@ -71,52 +72,55 @@ class TestGameState:
         assert game.board[4][4] == white_pawn, "Board does not recognized that piece has been un-captured"
 
     def test_promotion_and_undo(self):
-        game = Gamestate(setup_type="empty")
+        empty_game = Gamestate(setup_type="empty")
         
         pawn = Pawn("White", (1, 0))
-        game.place_piece_manually(pawn, (1, 0))
+        empty_game.place_piece_manually(pawn, (1, 0))
         
 
-        move = Move((1, 0), (0, 0), game.board, promote_to="Q")
-        game.make_move(move)
+        move = Move((1, 0), (0, 0), empty_game.board, promote_to="Q")
+        empty_game.make_move(move)
         
-        assert isinstance(game.board[0][0], Queen), "Promoted piece not generated"
-        assert isinstance(game.white_pieces[1], Queen), "Promoted piece not generated"
+        assert isinstance(empty_game.board[0][0], Queen), "Promoted piece not generated"
+        assert isinstance(empty_game.white_pieces[1], Queen), "Promoted piece not generated"
         assert pawn.square == None, "Pawn not removed from board after promoting"
-        assert game.board[1][0] == None, "Pawn not removed from board after promoting"
+        assert empty_game.board[1][0] == None, "Pawn not removed from board after promoting"
         
-        game.undo_move()
+        empty_game.undo_move()
         
-        assert isinstance(game.board[1][0], Pawn), "Pawn not restored to board after undo"
-        assert len(game.white_pieces) == 1, "Promoted piece not removed after undo"
+        assert isinstance(empty_game.board[1][0], Pawn), "Pawn not restored to board after undo"
+        assert len(empty_game.white_pieces) == 1, "Promoted piece not removed after undo"
         assert pawn.square == (1,0), "Pawn not restored to board after un-promoting"
-        assert game.board[1][0] == pawn, "Pawn not restored to board after un-promoting"
+        assert empty_game.board[1][0] == pawn, "Pawn not restored to board after un-promoting"
 
     def test_castling_out_of_through_check(self):
-        game = Gamestate(setup_type="empty")
+        empty_game = Gamestate(setup_type="empty")
         
         white_king = King("White", (7, 4))
         white_rook = Rook("White", (7, 7))
-        game.place_piece_manually(white_king, (7, 4))
-        game.place_piece_manually(white_rook, (7, 7))
+        black_king = King("Black", (0, 1)) # King on b8
+        empty_game.place_piece_manually(white_king, (7, 4))
+        empty_game.place_piece_manually(white_rook, (7, 7))
+        empty_game.place_piece_manually(black_king, (0, 1))
 
-        game.castling_rights = {
+
+        empty_game.castling_rights = {
             #Falsify queenside, otherwise will error since there is no move involving queen's rook
             'White': {'kingside': True, 'queenside': False}, 
-            'Black': {'kingside': True, 'queenside': True}
+            'Black': {'kingside': False, 'queenside': False}
         }
         
         #Can't castle through check
         black_rook = Rook("Black", (0, 5)) # Rook on f8
-        game.place_piece_manually(black_rook, (0, 5))
+        empty_game.place_piece_manually(black_rook, (0, 5))
 
-        assert len(game.white_pieces) == 2, "Manually placed pieces not added to piece list"
-        assert len(game.black_pieces) == 1, "Manually placed piece not added to piece list"
+        assert len(empty_game.white_pieces) == 2, "Manually placed pieces not added to piece list"
+        assert len(empty_game.black_pieces) == 2, "Manually placed piece not added to piece list"
 
-        assert game.square_under_attack((7, 5)) is True, "Square not under attack when it should be"
-        assert game.square_under_attack((7, 4)) is False, "Square under attack when it shouldn't be"
+        assert empty_game.square_under_attack((7, 5)) is True, "Square not under attack when it should be"
+        assert empty_game.square_under_attack((7, 4)) is False, "Square under attack when it shouldn't be"
         
-        legal_moves = game.get_all_legal_moves()
+        legal_moves = empty_game.get_all_legal_moves()
         
         castle_found = False
         for move in legal_moves:
@@ -125,14 +129,15 @@ class TestGameState:
                 
         assert not castle_found, "Engine allowed castling through check"
 
-        game.remove_piece_manually((0, 5))
-        assert len(game.black_pieces) == 0, "Manually removed piece not removed from piece list"
+        empty_game.remove_piece_manually((0, 5))
+        assert len(empty_game.black_pieces) == 1, "Manually removed piece not removed from piece list"
 
         #Can't castle out of check
         black_rook = Rook("Black", (0, 4)) # Rook on e8
-        game.place_piece_manually(black_rook, (0, 4))
 
-        legal_moves = game.get_all_legal_moves()
+        empty_game.place_piece_manually(black_rook, (0, 4))
+
+        legal_moves = empty_game.get_all_legal_moves()
         
         castle_found = False
         for move in legal_moves:
@@ -141,22 +146,37 @@ class TestGameState:
                 
         assert not castle_found, "Engine allowed castling out of check"
 
-        game.remove_piece_manually((0, 4))
+        empty_game.remove_piece_manually((0, 4))
+
+        #Can't castle into check
+        black_rook = Rook("Black", (0, 6)) # Rook on g8
+        empty_game.place_piece_manually(black_rook, (0, 6))
+
+        legal_moves = empty_game.get_all_legal_moves()
+        
+        castle_found = False
+        for move in legal_moves:
+            if move.start_row == 7 and move.start_col == 4 and move.end_row == 7 and move.end_col == 6:
+                castle_found = True
+                
+        assert not castle_found, "Engine allowed castling into check"
+
+        empty_game.remove_piece_manually((0, 6))
 
         #Castling is possible when not in check
-        legal_moves = game.get_all_legal_moves()
+        legal_moves = empty_game.get_all_legal_moves()
 
         castle_found = False
         for move in legal_moves:
             if move.start_row == 7 and move.start_col == 4 and move.end_row == 7 and move.end_col == 6:
                 castle_found = True
 
-        assert castle_found, "Engine failed to allow legal castle through check"
+        assert castle_found, "Engine failed to allow legal castle"
 
-        game.make_move(Move((7,7), (6,7), game.board))
-        game.make_move(Move((6,7), (7,7), game.board))
+        empty_game.make_move(Move((7,7), (6,7), empty_game.board))
+        empty_game.make_move(Move((6,7), (7,7), empty_game.board))
 
-        legal_moves = game.get_all_legal_moves()
+        legal_moves = empty_game.get_all_legal_moves()
 
         castle_found = False
         for move in legal_moves:

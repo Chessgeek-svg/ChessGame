@@ -96,8 +96,8 @@ class TestGameState:
     def test_castling_out_of_through_check(self):
         empty_game = Gamestate(setup_type="empty")
         
-        white_king = King("White", (7, 4))
-        white_rook = Rook("White", (7, 7))
+        white_king = King("White", (7, 4)) # King on e1
+        white_rook = Rook("White", (7, 7)) # Rook on h1
         black_king = King("Black", (0, 1)) # King on b8
         empty_game.place_piece_manually(white_king, (7, 4))
         empty_game.place_piece_manually(white_rook, (7, 7))
@@ -185,3 +185,34 @@ class TestGameState:
 
         assert not castle_found, "Engine allowed castle after rook had moved"
 
+    def test_game_end_logic(self):
+        self.setup_method()
+        game = self.game
+
+        #Test that Fool's Mate is checkmate
+        game.make_move(Move((6,5), (4,5), game.board))#f4
+        game.make_move(Move((1,4), (2,4), game.board))#e6
+        game.make_move(Move((6,6), (4,6), game.board))#g4
+        game.make_move(Move((0,3), (4,7), game.board))#Qh4
+        game.get_all_legal_moves()
+
+        assert game.checkmate == True, "Checkmate not correctly detected"
+        game.undo_move()
+        assert game.checkmate == False, "Checkmate status persists after move is undone"
+
+        empty_game = Gamestate(setup_type="empty")
+        empty_game.castling_rights = {
+            'White': {'kingside': False, 'queenside': False}, 
+            'Black': {'kingside': False, 'queenside': False}
+        }
+
+        #Test that stalemate is detected correctly
+        black_king = King("Black", (2, 2)) #King on c6
+        black_rook = Rook("Black", (1, 1)) #Rook on b7
+        white_king = King("White", (0, 1)) #King on a8
+        empty_game.place_piece_manually(black_king, (2, 2))
+        empty_game.place_piece_manually(black_rook, (1, 1))
+        empty_game.place_piece_manually(white_king, (0, 0))
+        empty_game.get_all_legal_moves()
+
+        assert empty_game.stalemate == True, "Stalemate not correctly detected"

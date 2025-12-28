@@ -183,6 +183,7 @@ class Gamestate (object):
         #Reset en passant and castle rights & logs
         self.castling_rights = self.castling_rights_log.pop()
         self.en_passant_target = self.en_passant_target_log.pop()
+        self.checkmate, self.stalemate = False, False
 
     #Get moves that would be possible for each piece
     def get_all_valid_moves(self):
@@ -213,6 +214,9 @@ class Gamestate (object):
 
             self.undo_move()
 
+        if legal_moves == []:
+            self.check_game_over()
+
         return legal_moves
 
     def in_check(self):          
@@ -224,7 +228,8 @@ class Gamestate (object):
         
         return self.square_under_attack(king.square)
 
-    #Currently only useful
+    #Currently only useful for check and check-related functions
+    #Could be used to highlight squares on GUI if desired
     def square_under_attack(self, square):
         r, c = square
         self.white_to_move = not self.white_to_move 
@@ -259,3 +264,11 @@ class Gamestate (object):
             'White': self.castling_rights['White'].copy(),
             'Black': self.castling_rights['Black'].copy()
         }
+    
+    #Currently only called when get_all_legal_moves returns an empty list
+    def check_game_over(self):
+        if self.in_check():
+            self.checkmate = True
+        else:
+            self.stalemate = True
+        return True

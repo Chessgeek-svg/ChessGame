@@ -6,6 +6,22 @@ class Piece(ABC):
         self.color = color
         self.square = square
 
+    def __str__(self):
+        color_code = 'w' if self.color == "White" else 'b'
+        
+
+        role_map = {
+            "Pawn": "p",
+            "Rook": "R",
+            "Knight": "N",
+            "Bishop": "B",
+            "Queen": "Q",
+            "King": "K"
+        }
+        role_code = role_map[self.__class__.__name__]
+        
+        return color_code + role_code
+
     def __repr__(self):
         return f"{self.color} {self.__class__.__name__} at {self.square}"
     
@@ -119,7 +135,7 @@ class Pawn(Piece):
         promotion_rank = 0 if self.color == "White" else 7
 
         if end_row == promotion_rank:
-            for piece_type in ["Q", "R", "B", "N"]:
+            for piece_type in ["N", "R", "B", "Q"]:
                 valid_moves.append(Move(self.square, (end_row, end_col), board, promote_to=piece_type))
         else:
             valid_moves.append(Move(self.square, (end_row, end_col), board))

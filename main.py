@@ -1,94 +1,147 @@
-import move_generator
+import pygame
+import sys
+from Gamestate import Gamestate
 from Move import Move
 
-starting_board = [
-            ['r', 'n', 'b', 'q', 'k',  0 ,  0 , 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
-            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
-            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
-            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
-            [ 0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,  0],
-            ['R',  0 ,  0 ,  0 , 'K',  0 ,  0 , 'R']
-        ]
+WIDTH = 512
+HEIGHT = 512
+DIMENSION = 8
+SQ_SIZE = WIDTH // DIMENSION
+MAX_FPS = 60
+IMAGES = {}
 
-class GameState (object):
-    def __init__ (self, board = starting_board, white_to_move = True, move_log = []):
-        self.board = board            
-        self.white_to_move = white_to_move
-        self.move_log = move_log
-        self.en_passant = []
-        self.candidate_moves = []
-        self.check_analysis = False
-    def make_move(self, start_row, start_col, end_row, end_col, promote_to = None):
-        if not self.candidate_moves:
-            print(self.checkmate_stalemate())
-        temp = Move((start_row, start_col), (end_row, end_col), self.board, promote_to)
-        if temp in self.candidate_moves:
-            is_castle = self.castle_move(start_row, start_col, end_col)
-            #Promotion check naively assumes that if a piece is passed in, it is possible to promote
-            self.board[end_row][end_col] = promote_to if promote_to else self.board[start_row][start_col]
-            self.board[start_row][start_col] = 0
-            #Check if move is en passant, remove captured piece if so
-            if self.board[end_row][end_col].upper() == 'P' and [end_row, end_col] == self.en_passant:
-                self.board[start_row][end_col] = 0
-            #If move is castle, update board to move the rook
-            if is_castle:
-                if start_col - end_col == 2:
-                    self.board[end_row][3] = self.board[end_row][0]
-                    self.board[end_row][0] = 0
-                elif start_col - end_col == -2:
-                    self.board[end_row][5] = self.board[end_row][7]
-                    self.board[end_row][7] = 0
+def load_images():
+    pieces = ['wp', 'wR', 'wN', 'wB', 'wQ', 'wK', 'bp', 'bR', 'bN', 'bB', 'bQ', 'bK']
+    for piece in pieces:
+        IMAGES[piece] = pygame.transform.scale(
+            pygame.image.load("images/" + piece + ".png"), 
+            (SQ_SIZE, SQ_SIZE)
+        )
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Chess Game v1.0")
+    clock = pygame.time.Clock()
+    
+    gs = Gamestate()
+
+    load_images()
+
+    sq_selected = ()
+    player_clicks = []
+
+    legal_moves = gs.get_all_legal_moves()
+    move_made = False
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                location = pygame.mouse.get_pos()
+                col = location[0] // SQ_SIZE
+                row = location[1] // SQ_SIZE
+
+                #Show the legal moves for a selected piece
+                if sq_selected != (row, col) and gs.board[row][col] and gs.board[row][col].color == ('White' if gs.white_to_move else 'Black'):
+                    sq_selected = (row, col)
+                    player_clicks = [sq_selected]
+                #Hide them if they click the same piece again
+                elif sq_selected == (row, col):
+                    sq_selected = ()
+                    player_clicks = []
                 else:
-                    print("Error, illegal / impossible castle")
-            self.en_passant = move_generator.check_en_passant(self.board, start_row, end_row, end_col)
-            self.candidate_moves = []
-            self.move_log.append(Move.get_computer_notation(temp))
-            self.white_to_move = not self.white_to_move
-            print(self.board)
-        else:
-            print("Illegal Move")
-        for i in range(0,8):
-            for j in range(0,8):
-                if self.board[i][j] == 0:
-                    continue
-                if self.board[i][j].isupper() == self.white_to_move:
-                    moves_for_piece = move_generator.get_moves(self, self.board, i, j)
-                    self.candidate_moves.extend(moves_for_piece)
-    def castle_move(self, start_row, start_col, end_col):
-        if self.board[start_row][start_col].upper() == "K" and abs(start_col - end_col) == 2:
-            return True
-        return False
-    def checkmate_stalemate(self):
-        for i in range(0,8):
-            for j in range(0,8):
-                if self.board[i][j] == 0:
-                    continue
-                if self.board[i][j].isupper() == self.white_to_move:
-                    moves_for_piece = move_generator.get_moves(self, self.board, i, j)
-                    if moves_for_piece:
-                        pass_move = Move((0, 0), (0, 0), self.board)
-                        if move_generator.puts_in_check(self, self.board, pass_move):                        
-                            return "Check"
-                        return "Normal"
+                    sq_selected = (row, col)
+                    player_clicks.append(sq_selected)
+
+                if len(player_clicks) == 2:
+                    #If they clicked a piece and then a square, make that a move and see if it has the same squares as any legal move
+                    #Instead of just making the temp move, we make the move generated by get_all_legal_moves, since it handles castling, promotion, & ep correctly
+                    temp_move = Move(player_clicks[0], player_clicks[1], gs.board)
+                    candidate_moves = [move for move in legal_moves if move == temp_move]
+                    chosen_move = None
+                    if len(candidate_moves) == 1:
+                        chosen_move = candidate_moves[0]
+                    elif len(candidate_moves) > 1:
+                        promote_to = get_user_promotion_choice()
+                        for move in candidate_moves:
+                            if promote_to == move.promote_to:
+                                chosen_move = move
+
+                    if chosen_move is not None:
+                        gs.make_move(chosen_move)
+                        move_made = True
+                        sq_selected = ()
+                        player_clicks = []
+                        print(chosen_move.get_computer_notation())
+                    else:
+                        player_clicks = []
+                        sq_selected = ()
+                    
+        if move_made:
+            legal_moves = gs.get_all_legal_moves()
+            move_made = False
+                
+        draw_game_state(screen, gs, legal_moves, sq_selected)
+        clock.tick(MAX_FPS)
+        pygame.display.flip()
+
+    pygame.quit()
+    sys.exit()
+
+def draw_game_state(screen, gs, legal_moves, sq_selected):
+    draw_board(screen)
+    highlight_squares(screen, gs, legal_moves, sq_selected)
+    draw_pieces(screen, gs.board)
+
+def draw_board(screen):
+    colors = [pygame.Color("gray"), pygame.Color("gray25")]
+    for r in range(DIMENSION):
+        for c in range(DIMENSION):
+            color = colors[((r + c) % 2)]
+            pygame.draw.rect(screen, color, pygame.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+
+def draw_pieces(screen, board):
+    for r in range(DIMENSION):
+        for c in range(DIMENSION):
+            piece = board[r][c]
+            if piece is not None:
+                piece_name = str(piece) 
+                
+                screen.blit(IMAGES[piece_name], pygame.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
+
+def highlight_squares(screen, gs, legal_moves, sq_selected):
+    if sq_selected != ():
+        row, col = sq_selected
         
-        pass_move = Move((0, 0), (0, 0), self.board)
-        if move_generator.puts_in_check(self, self.board, pass_move):
-            return "Checkmate"
-        return "Stalemate"
-
-game = GameState(white_to_move = True, move_log = ['e1:d1'])
-
-for i in range(0,8):
-    for j in range(0,8):
-        if game.board[i][j] == 0:
-            continue
-        if game.board[i][j].isupper() == game.white_to_move:
-            moves_for_piece = move_generator.get_moves(game, game.board, i, j)
-            game.candidate_moves.extend(moves_for_piece)
+        if gs.board[row][col] and gs.board[row][col].color == ('White' if gs.white_to_move else 'Black'):
             
-print([move.get_computer_notation() for move in game.candidate_moves])
-#Example of illegal & legal move behavior respectively
-game.make_move(7, 4, 7, 2, "Q")
-game.make_move(7, 4, 7, 6)
+            # Highlight the selected square
+            s = pygame.Surface((SQ_SIZE, SQ_SIZE))
+            s.set_alpha(100) # Transparency: 0 = transparent, 255 = opaque
+            s.fill(pygame.Color('darkgreen'))
+            screen.blit(s, (col*SQ_SIZE, row*SQ_SIZE))
+            
+            # Highlight moves from that square
+            s.fill(pygame.Color('yellow'))
+            for move in legal_moves:
+                if move.start_row == row and move.start_col == col:
+                    screen.blit(s, (move.end_col*SQ_SIZE, move.end_row*SQ_SIZE))
+
+def get_user_promotion_choice():
+    print("Pawn Promotion! Choose a piece:")
+    print("Q = Queen, R = Rook, B = Bishop, N = Knight")
+    
+    valid_choices = {'Q': 'Queen', 'R': 'Rook', 'B': 'Bishop', 'N': 'Knight'}
+    
+    while True:
+        choice = input("Enter choice (Q/R/B/N): ").strip().upper()
+        if choice in valid_choices:
+            print(choice)
+            return choice 
+        print(f"'{choice}' is invalid. Please enter Q, R, B, or N.")
+
+if __name__ == "__main__":
+    main()

@@ -200,7 +200,6 @@ class Gamestate (object):
         legal_moves = []
         for move in candidate_moves:
             #Do not allow castling through or out of check. 
-            #Computationally could be improved (generating every opp move 3 times for each castle option)
             if move.is_castle:
                 if (self.square_under_attack((move.start_row, move.start_col)) or 
                 self.square_under_attack((move.start_row, (move.start_col + move.end_col) // 2))):
@@ -231,16 +230,15 @@ class Gamestate (object):
     #Currently only useful for check and check-related functions
     #Could be used to highlight squares on GUI if desired
     def square_under_attack(self, square):
-        r, c = square
-        self.white_to_move = not self.white_to_move 
-        opponent_moves = self.get_all_valid_moves()
-        self.white_to_move = not self.white_to_move
-        
-        for move in opponent_moves:
-            if move.end_row == r and move.end_col == c:
+        piece_list = self.black_pieces if self.white_to_move else self.white_pieces
+        for piece in piece_list:
+            if piece.square is None:
+                continue
+            if square in piece.get_controlled_squares(self):
                 return True
+            
         return False
-    
+
     def update_castle_rights(self, move):
         if isinstance(move.piece_moved, King):
             self.castling_rights[move.piece_moved.color]['kingside'] = False

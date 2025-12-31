@@ -29,6 +29,10 @@ class Piece(ABC):
     def get_legal_moves(self, gamestate):
         pass
 
+    def get_controlled_squares(self, gamestate):
+        moves = self.get_legal_moves(gamestate)
+        return [(move.end_row, move.end_col) for move in moves]
+
 class SlidingPiece(Piece):
     def _get_sliding_moves(self, gamestate, directions):
         valid_moves = []
@@ -131,6 +135,17 @@ class Pawn(Piece):
 
         return valid_moves
     
+    def get_controlled_squares(self, gamestate):
+        attacks = []
+        r, c = self.square
+        direction = -1 if self.color == "White" else 1
+        if 0 <= c - 1 <= 7:
+            attacks.append((r + direction, c - 1))
+        if 0 <= c + 1 <= 7:
+            attacks.append((r + direction, c + 1))
+
+        return attacks
+
     def _add_move_or_promotion_options(self, end_row, end_col, board, valid_moves):
         promotion_rank = 0 if self.color == "White" else 7
 

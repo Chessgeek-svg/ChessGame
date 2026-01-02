@@ -25,6 +25,7 @@ class Gamestate (object):
         }
         self.castling_rights_log = []
 
+        self.current_in_check = False
         self.checkmate = False
         self.stalemate = False
 
@@ -138,6 +139,7 @@ class Gamestate (object):
 
         self.move_log.append(move)
         self.white_to_move = not self.white_to_move
+        self.current_in_check = self.in_check()
 
     def undo_move(self):
         if len(self.move_log) == 0:
@@ -183,6 +185,7 @@ class Gamestate (object):
         #Reset en passant and castle rights & logs
         self.castling_rights = self.castling_rights_log.pop()
         self.en_passant_target = self.en_passant_target_log.pop()
+        self.current_in_check = self.in_check()
         self.checkmate, self.stalemate = False, False
 
     #Get moves that would be possible for each piece

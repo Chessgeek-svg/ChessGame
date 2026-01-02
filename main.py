@@ -165,14 +165,14 @@ def draw_pieces(screen, board):
                 screen.blit(IMAGES[piece_name], pygame.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 def highlight_squares(screen, gs, legal_moves, sq_selected):
+    s = pygame.Surface((SQ_SIZE, SQ_SIZE))
+    s.set_alpha(100) # Transparency: 0 = transparent, 255 = opaque
     if sq_selected != ():
         row, col = sq_selected
         
         if gs.board[row][col] and gs.board[row][col].color == ('White' if gs.white_to_move else 'Black'):
             
             # Highlight the selected square
-            s = pygame.Surface((SQ_SIZE, SQ_SIZE))
-            s.set_alpha(100) # Transparency: 0 = transparent, 255 = opaque
             s.fill(pygame.Color('darkgreen'))
             screen.blit(s, (col*SQ_SIZE, row*SQ_SIZE))
             
@@ -181,6 +181,13 @@ def highlight_squares(screen, gs, legal_moves, sq_selected):
             for move in legal_moves:
                 if move.start_row == row and move.start_col == col:
                     screen.blit(s, (move.end_col*SQ_SIZE, move.end_row*SQ_SIZE))
+
+    #Currently rerendering every frame, address if needed for performance
+    if gs.current_in_check:
+        king = gs.white_king if gs.white_to_move else gs.black_king
+        row, col = king.square
+        s.fill(pygame.Color('red'))
+        screen.blit(s, (col*SQ_SIZE, row*SQ_SIZE))
 
 def get_user_promotion_choice():
     print("Pawn Promotion! Choose a piece:")

@@ -13,6 +13,7 @@ DIMENSION = 8
 SQ_SIZE = BOARD_WIDTH // DIMENSION
 MAX_FPS = 60
 IMAGES = {}
+DEBUG_MODE = False
 
 def load_images():
     pieces = ['wp', 'wR', 'wN', 'wB', 'wQ', 'wK', 'bp', 'bR', 'bN', 'bB', 'bQ', 'bK']
@@ -49,7 +50,8 @@ def main():
                 row = location[1] // SQ_SIZE
 
                 #Show the legal moves for a selected piece
-                if sq_selected != (row, col) and gs.board[row][col] and gs.board[row][col].color == ('White' if gs.white_to_move else 'Black'):
+                square = gs.board[row][col]
+                if sq_selected != (row, col) and square and square.color == ('White' if gs.white_to_move else 'Black'):
                     sq_selected = (row, col)
                     player_clicks = [sq_selected]
                 #Hide them if they click the same piece again
@@ -79,8 +81,9 @@ def main():
                         move_made = True
                         sq_selected = ()
                         player_clicks = []
-                        for move in legal_moves:
-                            print(move.get_algebraic_notation())
+                        if DEBUG_MODE:
+                            for move in legal_moves:
+                                print(move.get_algebraic_notation())
                     else:
                         player_clicks = []
                         sq_selected = ()

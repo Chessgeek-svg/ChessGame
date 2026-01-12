@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from Move import Move
+from typing import List
 
 class Piece(ABC):
     def __init__(self, color, square):
@@ -26,8 +27,8 @@ class Piece(ABC):
         return f"{self.color} {self.__class__.__name__} at {self.square}"
     
     @abstractmethod
-    def get_legal_moves(self, gamestate):
-        pass
+    def get_legal_moves(self, gamestate) -> List['Move']:
+        ...
 
     def get_controlled_squares(self, gamestate):
         moves = self.get_legal_moves(gamestate)
